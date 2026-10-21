@@ -1,12 +1,17 @@
 import argparse
+import json
+from datetime import UTC, datetime
 from pathlib import Path
 
+import joblib
 import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.layers import LSTM, Dense
 from tensorflow.keras.models import Sequential
+
+ARTIFACTS_DIR = Path("outputs") / "artifacts"
 
 
 def load_prices(csv_path: Path) -> pd.Series:
@@ -94,6 +99,28 @@ def forecast_future(
     return pd.Series(pred_values, index=future_index)
 
 
+def persist_artifacts(
+    result: dict,
+    params: dict[str, int | float | str],
+    artifacts_dir: Path = ARTIFACTS_DIR,
+) -> Path:
+    """Save trained model, fitted scaler and run metadata for reuse.
+
+    Without this, the only complete artifacts died with the training process.
+    """
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+    result["model"].save(artifacts_dir / "model.keras")
+    joblib.dump(result["scaler"], artifacts_dir / "scaler.pkl")
+    meta = {
+        "trained_at_utc": datetime.now(UTC).isoformat(),
+        "mae": result["mae"],
+        "rmse": result["rmse"],
+        **params,
+    }
+    (artifacts_dir / "meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    return artifacts_dir
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Simple Finance Forecast (LSTM)")
     parser.add_argument("--csv", type=str, required=True, help="Path to CSV with Date and Close")
@@ -134,6 +161,18 @@ def main() -> None:
     print(future_forecast)
     future_forecast.to_frame(name="forecast").to_csv(output_dir / "future_forecast.csv", index=True)
 
+    artifacts_dir = persist_artifacts(
+        result,
+        params={
+            "lookback": args.lookback,
+            "units": args.units,
+            "epochs": args.epochs,
+            "batch_size": args.batch_size,
+            "test_size": args.test_size,
+            "future_days": args.future_days,
+        },
+    )
+
     metrics_df = pd.DataFrame(
         [
             {
@@ -154,6 +193,7 @@ def main() -> None:
     print("- metrics.csv")
     print("- holdout_actual_vs_forecast.csv")
     print("- future_forecast.csv")
+    print(f"- artifacts (model/scaler/meta) -> {artifacts_dir}")
 
 
 if __name__ == "__main__":
