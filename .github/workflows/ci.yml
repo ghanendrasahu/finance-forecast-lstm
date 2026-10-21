@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ruff
+        run: pip install "ruff==0.17.1"
+
+      - name: Lint
+        run: ruff check .
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies (bounded ranges; tensorflow 2.21 major)
+        run: |
+          pip install -r requirements-dev.txt
+
+      - name: Run tests (pure functions + persistence + forecast shapes)
+        run: python -m pytest tests -q
+
+  smoke-train:
+    runs-on: ubuntu-latest
+    # Real end-to-end check: one tiny training run must persist artifacts.
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Train tiny model on the bundled sample
+        run: |
+          python finance_forecast.py --csv finance_prices_sample.csv \
+            --test-size 10 --lookback 10 --epochs 1 --units 4 --batch-size 8 --future-days 3
+
+      - name: Assert artifacts survived the process
+        run: |
+          test -f outputs/artifacts/model.keras || (echo "model missing" && exit 1)
+          test -f outputs/artifacts/scaler.pkl  || (echo "scaler missing" && exit 1)
+          test -f outputs/artifacts/meta.json   || (echo "meta missing" && exit 1)
+          test -f outputs/metrics.csv           || (echo "metrics missing" && exit 1)
+          echo "artifacts persisted:"
+          ls -la outputs/artifacts
