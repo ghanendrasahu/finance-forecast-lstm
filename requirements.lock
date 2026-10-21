@@ -1,0 +1,52 @@
+# Pinned resolution of finance-forecast-lstm's dev tree, resolved natively
+# on Windows/CP311 with the verified working configuration (tensorflow 2.21).
+# CI on Linux installs the bounded ranges from requirements-dev.txt and
+# validates the same suite plus a tiny real training smoke run.
+
+
+Pygments==2.21.0
+absl-py==2.5.1
+astunparse==1.6.3
+certifi==2026.10.19
+charset-normalizer==3.5.2
+cloudpickle==3.1.2
+colorama==0.4.6
+flatbuffers==25.12.19
+gast==0.7.0
+google-pasta==0.2.0
+grpcio==1.84.0
+h5py==3.14.0
+idna==3.20
+iniconfig==2.3.1
+joblib==1.6.0
+keras==3.15.1
+libclang==18.1.1
+markdown-it-py==4.2.0
+mdurl==0.1.2
+ml_dtypes==0.6.0
+namex==0.1.0
+narwhals==2.27.1
+numpy==2.4.6
+opt_einsum==3.4.0
+optree==0.20.0
+packaging==26.3
+pandas==3.0.6
+pluggy==1.7.0
+protobuf==7.36.2
+pytest==9.1.1
+python-dateutil==2.9.0.post0
+requests==2.34.2
+rich==15.0.0
+ruff==0.17.1
+scikit-learn==1.9.1
+scipy==1.17.1
+setuptools==84.2.1
+six==1.17.0
+tensorflow==2.21.0
+termcolor==3.3.0
+threadpoolctl==3.7.0
+typing_extensions==4.16.0
+tzdata==2026.5
+urllib3==2.8.0
+wheel==0.48.0
+wrapt==2.5.1
